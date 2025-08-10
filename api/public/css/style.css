@@ -1,0 +1,49 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  text-align: center;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+section {
+  margin: 2rem 0;
+}
+
+button {
+  padding: 1rem 2rem;
+  margin: 0.5rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.status {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+}
+
+@media (max-width: 600px) {
+  button {
+    width: 80%;
+    font-size: 1rem;
+  }
+
+  section {
+    margin: 1rem 0;
+  }
+}
