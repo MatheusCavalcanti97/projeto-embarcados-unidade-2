@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -21,6 +22,7 @@
 #define I2C_MASTER_RX_BUF_DISABLE 0
 
 #define LED_GPIO GPIO_NUM_2
+#define LAMP_GPIO GPIO_NUM_4
 
 static EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
@@ -28,6 +30,7 @@ const int WIFI_CONNECTED_BIT = BIT0;
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static uint8_t bh1750_addr = 0x23;
 static bool mqtt_connected = false;
+static char modoAtual[16] = "automatico";
 
 // --- I2C ---
 static esp_err_t i2c_master_init(void)
@@ -129,11 +132,66 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_CONNECTED:
         mqtt_connected = true;
         ESP_LOGI(TAG, "MQTT conectado");
+        esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/modo", 1);
+        esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/comando", 1);
         break;
+
     case MQTT_EVENT_DISCONNECTED:
         mqtt_connected = false;
         ESP_LOGI(TAG, "MQTT desconectado");
         break;
+
+    case MQTT_EVENT_DATA:
+        ESP_LOGI(TAG, "Mensagem recebida no tópico: %.*s", event->topic_len, event->topic);
+        ESP_LOGI(TAG, "Conteúdo: %.*s", event->data_len, event->data);
+
+        if (strncmp(event->topic, "ads/embarcados/unidade2/modo", event->topic_len) == 0)
+        {
+            memset(modoAtual, 0, sizeof(modoAtual));
+            int len = event->data_len < sizeof(modoAtual) - 1 ? event->data_len : sizeof(modoAtual) - 1;
+            memcpy(modoAtual, event->data, len);
+            modoAtual[len] = '\0';
+
+            for (int i = 0; i < len; i++)
+            {
+                if (modoAtual[i] == '\r' || modoAtual[i] == '\n' || modoAtual[i] == ' ')
+                {
+                    modoAtual[i] = '\0';
+                    break;
+                }
+            }
+
+            ESP_LOGI(TAG, "🔄 Modo alterado para: %s", modoAtual);
+
+            if (mqtt_connected)
+            {
+                esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_modo", modoAtual, 0, 1, 0);
+                ESP_LOGI(TAG, "📤 Modo publicado em status_modo");
+            }
+        }
+
+        if (strncmp(event->topic, "ads/embarcados/unidade2/comando", event->topic_len) == 0)
+        {
+            if (strcmp(modoAtual, "manual") == 0)
+            {
+                if (strncmp(event->data, "on", event->data_len) == 0)
+                {
+                    gpio_set_level(LAMP_GPIO, 1);
+                    ESP_LOGI(TAG, "💡 Lâmpada ligada via comando manual");
+                }
+                else if (strncmp(event->data, "off", event->data_len) == 0)
+                {
+                    gpio_set_level(LAMP_GPIO, 0);
+                    ESP_LOGI(TAG, "💡 Lâmpada desligada via comando manual");
+                }
+            }
+            else
+            {
+                ESP_LOGI(TAG, "⚠️ Comando ignorado: modo atual é automático");
+            }
+        }
+        break;
+
     default:
         break;
     }
@@ -165,7 +223,6 @@ static esp_err_t wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
-
     ESP_LOGI(TAG, "Conectando ao WiFi SSID: %s...", CONFIG_EXAMPLE_WIFI_SSID);
 
     EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
@@ -184,6 +241,10 @@ void app_main(void)
     gpio_reset_pin(LED_GPIO);
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
     gpio_set_level(LED_GPIO, 0);
+
+    gpio_reset_pin(LAMP_GPIO);
+    gpio_set_direction(LAMP_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_level(LAMP_GPIO, 0);
 
     ESP_ERROR_CHECK(i2c_master_init());
     i2c_scan();
@@ -227,6 +288,21 @@ void app_main(void)
                 else
                 {
                     ESP_LOGW(TAG, "MQTT não conectado, mensagem não enviada");
+                }
+
+                ESP_LOGI(TAG, "Modo atual no loop: %s", modoAtual);
+                if (strcmp(modoAtual, "automatico") == 0)
+                {
+                    if (lux < 50.0)
+                    {
+                        gpio_set_level(LAMP_GPIO, 1);
+                        ESP_LOGI(TAG, "💡 Lâmpada ligada automaticamente");
+                    }
+                    else
+                    {
+                        gpio_set_level(LAMP_GPIO, 0);
+                        ESP_LOGI(TAG, "💡 Lâmpada desligada automaticamente");
+                    }
                 }
             }
             else
