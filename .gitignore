@@ -1,0 +1,17 @@
+# Build artifacts
+/build/
+*.bin
+*.elf
+*.map
+
+# Configurações locais
+.vscode/
+.devcontainer/
+
+# Arquivos de configuração gerados
+sdkconfig
+sdkconfig.old
+
+# Logs e travas
+*.log
+dependencies.lock
