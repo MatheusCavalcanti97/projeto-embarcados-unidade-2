@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -31,6 +30,7 @@ static esp_mqtt_client_handle_t mqtt_client = NULL;
 static uint8_t bh1750_addr = 0x23;
 static bool mqtt_connected = false;
 static char modoAtual[16] = "automatico";
+static float limiarLux = 300.0;
 
 // --- I2C ---
 static esp_err_t i2c_master_init(void)
@@ -134,6 +134,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT conectado");
         esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/modo", 1);
         esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/comando", 1);
+        esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/limiar", 1); // ✅ novo tópico
         break;
 
     case MQTT_EVENT_DISCONNECTED:
@@ -166,7 +167,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             if (mqtt_connected)
             {
                 esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_modo", modoAtual, 0, 1, 0);
-                ESP_LOGI(TAG, "📤 Modo publicado em status_modo");
+                ESP_LOGI(TAG, "Modo publicado em status_modo");
             }
         }
 
@@ -182,12 +183,32 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 else if (strncmp(event->data, "off", event->data_len) == 0)
                 {
                     gpio_set_level(LAMP_GPIO, 0);
-                    ESP_LOGI(TAG, "💡 Lâmpada desligada via comando manual");
+                    ESP_LOGI(TAG, "Lâmpada desligada via comando manual");
                 }
             }
             else
             {
-                ESP_LOGI(TAG, "⚠️ Comando ignorado: modo atual é automático");
+                ESP_LOGI(TAG, "Comando ignorado: modo atual é automático");
+            }
+        }
+
+        if (strncmp(event->topic, "ads/embarcados/unidade2/limiar", event->topic_len) == 0)
+        {
+            char buffer[16] = {0};
+            int len = event->data_len < sizeof(buffer) - 1 ? event->data_len : sizeof(buffer) - 1;
+            memcpy(buffer, event->data, len);
+            buffer[len] = '\0';
+
+            float novoLimiar = atof(buffer);
+
+            if (novoLimiar >= 0.0 && novoLimiar <= 1000.0)
+            {
+                limiarLux = novoLimiar;
+                ESP_LOGI(TAG, "🔧 Limiar atualizado via MQTT: %.2f lux", limiarLux);
+            }
+            else
+            {
+                ESP_LOGW(TAG, "Valor de limiar inválido recebido: %s", buffer);
             }
         }
         break;
@@ -293,15 +314,16 @@ void app_main(void)
                 ESP_LOGI(TAG, "Modo atual no loop: %s", modoAtual);
                 if (strcmp(modoAtual, "automatico") == 0)
                 {
-                    if (lux < 50.0)
+                    // Nova lógica: acende se lux > limiar
+                    if (lux > limiarLux)
                     {
                         gpio_set_level(LAMP_GPIO, 1);
-                        ESP_LOGI(TAG, "💡 Lâmpada ligada automaticamente");
+                        ESP_LOGI(TAG, "Lâmpada ligada automaticamente");
                     }
                     else
                     {
                         gpio_set_level(LAMP_GPIO, 0);
-                        ESP_LOGI(TAG, "💡 Lâmpada desligada automaticamente");
+                        ESP_LOGI(TAG, "Lâmpada desligada automaticamente");
                     }
                 }
             }
