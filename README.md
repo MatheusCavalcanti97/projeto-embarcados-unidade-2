@@ -1,78 +1,210 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | -------- | -------- | -------- |
+# Projeto Embarcados - Unidade 2
 
-# ESP-MQTT sample application
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+Este projeto faz parte da Unidade 2 da disciplina de Sistemas Embarcados e utiliza o **ESP-IDF** para comunicação via MQTT e conexão Wi-Fi.
 
-This example connects to the broker URI selected using `idf.py menuconfig` (using mqtt tcp transport) and as a demonstration subscribes/unsubscribes and send a message on certain topic.
-(Please note that the public broker is maintained by the community so may not be always available, for details please see this [disclaimer](https://iot.eclipse.org/getting-started/#sandboxes))
+---
 
-Note: If the URI equals `FROM_STDIN` then the broker address is read from stdin upon application startup (used for testing)
+## 📥 1. Realizar o download do arquivo no repositório do GitHub
 
-It uses ESP-MQTT library which implements mqtt client to connect to mqtt broker with MQTT version 5.
+Você pode baixar o projeto de duas formas:
 
-The more details about MQTT v5, please refer to [official website](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html)
+### **Opção 1 – Via Navegador**
 
-## How to use example
+1. Acesse o repositório no GitHub:
+   [projeto-embarcados-unidade-2](https://github.com/MatheusCavalcanti97/projeto-embarcados-unidade-2.git)
+2. Clique no botão **Code** (verde).
+3. Clique em **Download ZIP**.
+4. Aguarde o download concluir.
 
-### Hardware Required
+### **Opção 2 – Via Terminal (Git instalado)**
 
-This example can be executed on any ESP32 board, the only required interface is WiFi and connection to internet.
-
-### Configure the project
-
-* Open the project configuration menu (`idf.py menuconfig`)
-* Configure Wi-Fi or Ethernet under "Example Connection Configuration" menu. See "Establishing Wi-Fi or Ethernet Connection" section in [examples/protocols/README.md](../../README.md) for more details.
-* MQTT v5 protocol (`CONFIG_MQTT_PROTOCOL_5`) under "ESP-MQTT Configurations" menu is enabled by `sdkconfig.defaults`.
-
-### Build and Flash
-
-Build the project and flash it to the board, then run monitor tool to view serial output:
-
-```
-idf.py -p PORT flash monitor
+```bash
+git clone https://github.com/MatheusCavalcanti97/projeto-embarcados-unidade-2.git
 ```
 
-(To exit the serial monitor, type ``Ctrl-]``.)
+---
 
-See the Getting Started Guide for full steps to configure and use ESP-IDF to build projects.
+## 📂 2. Descompactar e acessar a pasta do arquivo baixado
 
-## Example Output
+**Se baixou como ZIP:**
+
+1. Localize o arquivo `.zip` (normalmente na pasta `Downloads`).
+2. Clique com o botão direito sobre ele e selecione **Extrair aqui** ou **Extrair para...**.
+
+**Se clonou via Git:**
+
+- O projeto já estará disponível na pasta `projeto-embarcados-unidade-2`.
+
+---
+
+## 🖥️ 3. Abrir a pasta no VS Code
+
+1. Abra o **VS Code**.
+2. Vá em **File > Open Folder** e selecione a pasta do projeto.
+
+---
+
+## ⚙️ 4. Abrir o terminal do ESP-IDF no VS Code
+
+1. Na parte inferior do VS Code, procure por **OPEN ESP-IDF TERMINAL**.
+2. Clique para abrir o terminal específico do ESP-IDF.
+
+---
+
+## 🔧 5. Executar o menu de configuração
+
+1. No terminal do ESP-IDF, digite:
+   ```bash
+   idf.py menuconfig
+   ```
+
+---
+
+## 🌐 6. Configurar o MQTT Broker
+
+1. Dentro do menu de configuração, procure por **Example Configuration**.
+2. Verifique se existe o valor:
+   ```
+   mqtt://broker.hivemq.com:1883
+   ```
+3. Caso não exista, insira este valor.
+4. Pressione **S** para salvar e **ESC** para voltar.
+
+---
+
+## 📡 7. Configurar Wi-Fi
+
+1. Acesse **Example Connection Configuration**.
+2. Caso não haja valores, insira:
+   - **Wifi-SSID**: nome da sua rede Wi-Fi
+   - **Wifi-Password**: senha da sua rede Wi-Fi
+3. Pressione **S** para salvar e **ESC** para sair.
+
+---
+
+## 🚀 8. Compilar e executar o projeto
+
+⚠️ **Importante:** Antes de prosseguir, verifique:
+
+- O ESP-32 deve estar conectado ao computador via cabo USB.
+- Confirme se está selecionada a porta correta no VS Code. Caso não esteja, clique no seletor de porta (ex: `COMx`) e escolha a correta.
+
+1. No terminal do ESP-IDF, execute:
+   ```bash
+   idf.py build
+   idf.py flash
+   idf.py monitor
+   ```
+2. O dispositivo será programado e o monitor serial exibirá os logs.
+
+---
+
+## 🔌 9. Conectar a fonte de alimentação
+
+Após a conclusão do processo:
+
+1. Desconecte o cabo USB do ESP-32.
+2. Conecte a fonte da lâmpada na tomada de energia.
+3. Aguarde a luz **AZUL** do ESP acender — isso indicará que o dispositivo está conectado à internet.
+
+## ⚠️ Observação Importante
+
+Se o **ESP-32** estiver conectado via USB ao computador, **a fonte e a tomada da lâmpada não devem estar conectadas à energia** nesta fase para evitar riscos.
+
+# 📡 API do Projeto
+
+- A API está localizada dentro do projeto ESP na pasta:
 
 ```
-I (5119) esp_netif_handlers: example_connect: sta ip: 192.168.3.143, mask: 255.255.255.0, gw: 192.168.3.1
-I (5119) example_connect: Got IPv4 event: Interface "example_connect: sta" address: 192.168.3.143
-I (5619) example_connect: Got IPv6 event: Interface "example_connect: sta" address: fe80:0000:0000:0000:c64f:33ff:fe24:6645, type: ESP_IP6_ADDR_IS_LINK_LOCAL
-I (5619) example_connect: Connected to example_connect: sta
-I (5629) example_connect: - IPv4 address: 192.168.3.143
-I (5629) example_connect: - IPv6 address: fe80:0000:0000:0000:c64f:33ff:fe24:6645, type: ESP_IP6_ADDR_IS_LINK_LOCAL
-I (5649) MQTT5_EXAMPLE: Other event id:7
-W (6299) wifi:<ba-add>idx:0 (ifx:0, 34:29:12:43:c5:40), tid:7, ssn:0, winSize:64
-I (7439) MQTT5_EXAMPLE: MQTT_EVENT_CONNECTED
-I (7439) MQTT5_EXAMPLE: sent publish successful, msg_id=53118
-I (7439) MQTT5_EXAMPLE: sent subscribe successful, msg_id=41391
-I (7439) MQTT5_EXAMPLE: sent subscribe successful, msg_id=13695
-I (7449) MQTT5_EXAMPLE: sent unsubscribe successful, msg_id=55594
-I (7649) mqtt5_client: MQTT_MSG_TYPE_PUBACK return code is -1
-I (7649) MQTT5_EXAMPLE: MQTT_EVENT_PUBLISHED, msg_id=53118
-I (8039) mqtt5_client: MQTT_MSG_TYPE_SUBACK return code is 0
-I (8049) MQTT5_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=41391
-I (8049) MQTT5_EXAMPLE: sent publish successful, msg_id=0
-I (8059) mqtt5_client: MQTT_MSG_TYPE_SUBACK return code is 2
-I (8059) MQTT5_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=13695
-I (8069) MQTT5_EXAMPLE: sent publish successful, msg_id=0
-I (8079) MQTT5_EXAMPLE: MQTT_EVENT_DATA
-I (8079) MQTT5_EXAMPLE: key is board, value is esp32
-I (8079) MQTT5_EXAMPLE: key is u, value is user
-I (8089) MQTT5_EXAMPLE: key is p, value is password
-I (8089) MQTT5_EXAMPLE: payload_format_indicator is 1
-I (8099) MQTT5_EXAMPLE: response_topic is /topic/test/response
-I (8109) MQTT5_EXAMPLE: correlation_data is 123456
-I (8109) MQTT5_EXAMPLE: content_type is 
-I (8119) MQTT5_EXAMPLE: TOPIC=/topic/qos1
-I (8119) MQTT5_EXAMPLE: DATA=data_3
-I (8129) mqtt5_client: MQTT_MSG_TYPE_UNSUBACK return code is 0
-I (8129) MQTT5_EXAMPLE: MQTT_EVENT_UNSUBSCRIBED, msg_id=55594
-I (8139) mqtt_client: Client asked to disconnect
-I (9159) MQTT5_EXAMPLE: MQTT_EVENT_DISCONNECTED
+   .\projeto-final-embarcados-un-2\api
 ```
+
+---
+
+# 🔧 Configuração
+
+1.  Criar o arquivo .env:
+
+- Na pasta api, crie um arquivo chamado .env e insira os seguintes valores:
+
+# 🔌 Conexão com o broker MQTT
+
+1. BROKER_URL=mqtt://broker.hivemq.com:1883
+
+# 📤 Tópicos de publicação
+
+2. MQTT_TOPIC_CMD=ads/embarcados/unidade2/comando
+   - Comando para acender/apagar lâmpada.
+3. MQTT_TOPIC_MOD=ads/embarcados/unidade2/modo
+   - Modo solicitado (manual/automatico).
+
+# 📥 Tópicos de assinatura
+
+4. MQTT_TOPIC_LUX=ads/embarcados/unidade2/lux
+
+   - Sensor de luminosidade.
+
+5. MQTT_TOPIC_STATUS_MOD=ads/embarcados/unidade2/status_modo
+
+   - Modo atual reportado pelo ESP32.
+
+6. MQTT_TOPIC_LIMIAR=ads/embarcados/unidade2/limiar
+   - Limiar de luminosidade.
+
+---
+
+---
+
+# 🌐 Porta do servidor Express
+
+1. PORT=3000
+
+2. Instalar dependências:
+
+- No terminal, dentro da pasta api:
+
+```
+npm install
+```
+
+3. Executar a API:
+
+```
+npm start
+```
+
+# 🧠 Estrutura da API
+
+- A API é organizada em controller, routes e service:
+
+## Controller (lampController.js):
+
+### 1. manualControl(req, res)
+
+- Permite acender/apagar a lâmpada manualmente, apenas se o modo atual for "manual".
+
+- Valida o valor do campo estado no corpo da requisição (on ou off).
+
+- Publica o comando via MQTT (publishCommand).
+
+### 2. automaticControl()
+
+- Escuta mudanças de modo (onModeChange), limiar (onLimiarChange) e sensor de luminosidade (onSensorData).
+
+- Quando o modo é "automatico", decide acender/apagar a lâmpada conforme o valor de lux comparado ao limiar.
+
+### 3. getStatus(req, res)
+
+- Retorna o modo atual e o último valor de luminosidade registrado.
+
+### 4. getLimiar(req, res)
+
+- Retorna o valor atual do limiar de luminosidade.
+
+### 5. setLimiar(req, res)
+
+- Atualiza o limiar de luminosidade e publica via MQTT (publishLimiar).
+
+### 6. setMode(req, res)
+
+- Altera o modo de operação (manual ou automatico) e publica via MQTT (publishMode).
