@@ -9,7 +9,7 @@ const {
 
 let modoAtual = "manual";
 let ultimoLux = 0;
-let limiarLux = 300;
+let limiarLux = 350;
 
 const manualControl = (req, res) => {
   if (modoAtual !== "manual") {
@@ -29,7 +29,7 @@ const manualControl = (req, res) => {
 const automaticControl = () => {
   onModeChange((modo) => {
     modoAtual = modo.trim();
-    console.log(`Modo atualizado pelo ESP32: ${modoAtual}`);
+    console.log(`🔄 Modo atualizado pelo ESP32: ${modoAtual}`);
   });
 
   onLimiarChange((valor) => {
@@ -38,7 +38,7 @@ const automaticControl = () => {
       limiarLux = novoLimiar;
       console.log(`🔧 Limiar atualizado via MQTT: ${limiarLux} lux`);
     } else {
-      console.warn("Valor de limiar inválido recebido via MQTT");
+      console.warn("⚠️ Valor de limiar inválido recebido via MQTT");
     }
   });
 
@@ -47,15 +47,17 @@ const automaticControl = () => {
 
     if (modoAtual !== "automatico") return;
 
-    const estado = lux > limiarLux ? "on" : "off";
+    const estado = lux < limiarLux ? "on" : "off";
     publishCommand(estado);
     console.log(`🌡️ Lux: ${lux} → Lâmpada: ${estado} (limiar: ${limiarLux})`);
   });
 };
 
+
 const getStatus = (req, res) => {
   res.json({ modo: modoAtual, lux: ultimoLux });
 };
+
 
 const getLimiar = (req, res) => {
   res.json({ limiarLux });
