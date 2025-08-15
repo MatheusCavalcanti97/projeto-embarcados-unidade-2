@@ -5,11 +5,13 @@ const {
   onSensorData,
   onModeChange,
   onLimiarChange,
+  onLampStatusChange,
 } = require("../services/mqttService");
 
 let modoAtual = "manual";
 let ultimoLux = 0;
 let limiarLux = 350;
+let estadoReal = null;
 
 const manualControl = (req, res) => {
   if (modoAtual !== "manual") {
@@ -23,8 +25,13 @@ const manualControl = (req, res) => {
   }
 
   publishCommand(estado);
-  res.send(`💡 Lâmpada ${estado === "on" ? "acesa" : "apagada"} manualmente`);
+  res.send(`Lâmpada ${estado === "on" ? "acesa" : "apagada"} manualmente`);
 };
+
+onLampStatusChange((estado) => {
+  estadoReal = estado;
+  console.log(`💡 Estado real da lâmpada: ${estadoReal}`);
+});
 
 const automaticControl = () => {
   onModeChange((modo) => {
@@ -36,9 +43,9 @@ const automaticControl = () => {
     const novoLimiar = parseInt(valor, 10);
     if (!isNaN(novoLimiar) && novoLimiar >= 0 && novoLimiar <= 1000) {
       limiarLux = novoLimiar;
-      console.log(`🔧 Limiar atualizado via MQTT: ${limiarLux} lux`);
+      console.log(`Limiar atualizado via MQTT: ${limiarLux} lux`);
     } else {
-      console.warn("⚠️ Valor de limiar inválido recebido via MQTT");
+      console.warn("Valor de limiar inválido recebido via MQTT");
     }
   });
 
@@ -47,17 +54,24 @@ const automaticControl = () => {
 
     if (modoAtual !== "automatico") return;
 
-    const estado = lux < limiarLux ? "on" : "off";
-    publishCommand(estado);
-    console.log(`🌡️ Lux: ${lux} → Lâmpada: ${estado} (limiar: ${limiarLux})`);
+    const estadoDesejado = lux < limiarLux ? "on" : "off";
+
+    if (estadoDesejado !== estadoReal) {
+      publishCommand(estadoDesejado);
+      console.log(
+        `🌡️ Lux: ${lux} → Lâmpada: ${estadoDesejado} (limiar: ${limiarLux})`
+      );
+    } else {
+      console.log(
+        `🌡️ Lux: ${lux} → Estado mantido: ${estadoReal} (limiar: ${limiarLux})`
+      );
+    }
   });
 };
 
-
 const getStatus = (req, res) => {
-  res.json({ modo: modoAtual, lux: ultimoLux });
+  res.json({ modo: modoAtual, lux: ultimoLux, estadoReal });
 };
-
 
 const getLimiar = (req, res) => {
   res.json({ limiarLux });
