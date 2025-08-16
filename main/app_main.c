@@ -22,6 +22,7 @@
 
 #define LED_GPIO GPIO_NUM_2
 #define LAMP_GPIO GPIO_NUM_4
+static int estadoLampada = -1;
 
 static EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
@@ -134,7 +135,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT conectado");
         esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/modo", 1);
         esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/comando", 1);
-        esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/limiar", 1); // ✅ novo tópico
+        esp_mqtt_client_subscribe(mqtt_client, "ads/embarcados/unidade2/limiar", 1);
         break;
 
     case MQTT_EVENT_DISCONNECTED:
@@ -173,22 +174,35 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
         if (strncmp(event->topic, "ads/embarcados/unidade2/comando", event->topic_len) == 0)
         {
-            if (strcmp(modoAtual, "manual") == 0)
+            char comando[8] = {0};
+            int len = event->data_len < sizeof(comando) - 1 ? event->data_len : sizeof(comando) - 1;
+            memcpy(comando, event->data, len);
+            comando[len] = '\0';
+
+            for (int i = 0; i < len; i++)
             {
-                if (strncmp(event->data, "on", event->data_len) == 0)
+                if (comando[i] == '\r' || comando[i] == '\n' || comando[i] == ' ')
                 {
-                    gpio_set_level(LAMP_GPIO, 1);
-                    ESP_LOGI(TAG, "💡 Lâmpada ligada via comando manual");
+                    comando[i] = '\0';
+                    break;
                 }
-                else if (strncmp(event->data, "off", event->data_len) == 0)
-                {
-                    gpio_set_level(LAMP_GPIO, 0);
-                    ESP_LOGI(TAG, "Lâmpada desligada via comando manual");
-                }
+            }
+
+            if (strcmp(comando, "on") == 0)
+            {
+                gpio_set_level(LAMP_GPIO, 1);
+                ESP_LOGI(TAG, "💡 Lâmpada ligada via comando MQTT");
+                esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_lampada", "on", 0, 1, 0);
+            }
+            else if (strcmp(comando, "off") == 0)
+            {
+                gpio_set_level(LAMP_GPIO, 0);
+                ESP_LOGI(TAG, "Lâmpada desligada via comando MQTT");
+                esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_lampada", "off", 0, 1, 0);
             }
             else
             {
-                ESP_LOGI(TAG, "Comando ignorado: modo atual é automático");
+                ESP_LOGW(TAG, "Comando inválido recebido: %s", comando);
             }
         }
 
@@ -314,16 +328,23 @@ void app_main(void)
                 ESP_LOGI(TAG, "Modo atual no loop: %s", modoAtual);
                 if (strcmp(modoAtual, "automatico") == 0)
                 {
-                    // Nova lógica: acende se lux > limiar
-                    if (lux > limiarLux)
+                    int novoEstado = (lux < limiarLux) ? 1 : 0;
+
+                    if (novoEstado != estadoLampada)
                     {
-                        gpio_set_level(LAMP_GPIO, 1);
-                        ESP_LOGI(TAG, "Lâmpada ligada automaticamente");
-                    }
-                    else
-                    {
-                        gpio_set_level(LAMP_GPIO, 0);
-                        ESP_LOGI(TAG, "Lâmpada desligada automaticamente");
+                        gpio_set_level(LAMP_GPIO, novoEstado);
+                        estadoLampada = novoEstado;
+
+                        if (novoEstado == 1)
+                        {
+                            ESP_LOGI(TAG, "💡 Lâmpada ligada automaticamente");
+                            esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_lampada", "on", 0, 1, 0);
+                        }
+                        else
+                        {
+                            ESP_LOGI(TAG, "Lâmpada desligada automaticamente");
+                            esp_mqtt_client_publish(mqtt_client, "ads/embarcados/unidade2/status_lampada", "off", 0, 1, 0);
+                        }
                     }
                 }
             }

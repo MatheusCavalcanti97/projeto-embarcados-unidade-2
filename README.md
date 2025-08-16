@@ -133,23 +133,26 @@ Se o **ESP-32** estiver conectado via USB ao computador, **a fonte e a tomada da
 
 # 📤 Tópicos de publicação
 
-2. MQTT_TOPIC_CMD=ads/embarcados/unidade2/comando
+1. MQTT_TOPIC_CMD=ads/embarcados/unidade2/comando
    - Comando para acender/apagar lâmpada.
-3. MQTT_TOPIC_MOD=ads/embarcados/unidade2/modo
+2. MQTT_TOPIC_MOD=ads/embarcados/unidade2/modo
    - Modo solicitado (manual/automatico).
 
 # 📥 Tópicos de assinatura
 
-4. MQTT_TOPIC_LUX=ads/embarcados/unidade2/lux
+1. MQTT_TOPIC_LUX=ads/embarcados/unidade2/lux
 
    - Sensor de luminosidade.
 
-5. MQTT_TOPIC_STATUS_MOD=ads/embarcados/unidade2/status_modo
+2. MQTT_TOPIC_STATUS_MOD=ads/embarcados/unidade2/status_modo
 
    - Modo atual reportado pelo ESP32.
 
-6. MQTT_TOPIC_LIMIAR=ads/embarcados/unidade2/limiar
+3. MQTT_TOPIC_LIMIAR=ads/embarcados/unidade2/limiar
    - Limiar de luminosidade.
+
+1. MQTT_TOPIC_STATUS_LAMP=ads/embarcados/unidade2/status_lampada
+   - Status da lâmpada (ligada/desligada).
 
 ---
 
